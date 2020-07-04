@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naver - Login</title>
+    <!-- 引入SDK -->
+    <script type="text/javascript" src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.0.js"
+        charset="utf-8"></script>
+    <!-- 引入 uniapp SDK -->
+    <script type="text/javascript" src="https://js.cdn.aliyun.dcloud.net.cn/dev/uni-app/uni.webview.1.5.2.js"></script>
+    <style>
+        #naverIdLogin {
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 按钮容器 -->
+    <div id="naverIdLogin"></div>
+
+    <script>
+        var naverLogin = new naver.LoginWithNaverId({
+            clientId: "plLPqLKGEHb7HYBhp8RD",
+            callbackUrl: "https://sys.everyportable.co.kr:8086/login/login_naver.html",
+            isPopup: false,
+            loginButton: {
+                color: "green",
+                type: 3,
+                height: 40
+            },
+            callbackHandle: true
+        });
+        // 初始化实例
+        naverLogin.init();
+
+        // 监听uniapp回传数据事件
+        document.addEventListener('UniAppJSBridgeReady', function () {
+            // 一秒后点击登录按钮
+            const timer = setTimeout(() => {
+                document.getElementById('naverIdLogin_loginButton').click();
+            }, 1000)
+            // 获取用户登录状态
+            naverLogin.getLoginStatus(function (status) {
+                console.log(status);
+                if (status) {
+                    // 已登录，取消点击，获取用户信息
+                    clearTimeout(timer);
+                    var email = naverLogin.user.getEmail();
+                    var name = naverLogin.user.getNickName();
+                    var uniqId = naverLogin.user.getId();
+                    // 发送用户信息给UNIAPP
+                    console.log(email, name, uniqId);
+					var token = naverLogin.accessToken.accessToken;
+					fetch("https://nid.naver.com/oauth2.0/token?grant_type=delete&client_id=plLPqLKGEHb7HYBhp8RD&client_secret=izyUq0V9Ff&access_token="+token+"&service_provider=NAVER")
+					.then(function(response) {
+					console.log(response)
+					})
+					.then(function(myJson) {
+					console.log(myJson);
+					});
+                    uni.postMessage({
+                        data: {
+                            payload: {
+                                id: uniqId,
+                                email: email,
+                                name: name
+                            }
+                        }
+                    });
+                } else {
+                    console.log("登录失败");
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

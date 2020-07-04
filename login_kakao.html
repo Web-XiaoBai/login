@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kakao Login</title>
+</head>
+
+<body>
+    <!-- 引入SDK -->
+	<script src="./jquery-2.1.4.min.js"></script>
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+    <script type="text/javascript" src="https://js.cdn.aliyun.dcloud.net.cn/dev/uni-app/uni.webview.1.5.2.js"></script>
+
+    <!-- 登录按钮容器 -->
+    <!--<a id="kakao-login-btn"></a>-->
+
+    <script>
+        // 初始化应用程序密钥
+        Kakao.init('72c4b0474c9b26e33720caad9e2012fc');
+
+        // 检查是否初始化成功
+        console.log(Kakao.isInitialized())
+
+        // 触发 UniAppJSBridgeReady 事件后，即可调用 uni 的 API。
+        document.addEventListener('UniAppJSBridgeReady', function () {
+            // 创建登录按钮
+			var code = getUrlParam("code");
+			$.get("https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=512e89fbe6d14686d828802e6e870dbf&redirect_uri=https://sys.everyportable.co.kr:8086/login/login_kakao.html&code="+code,function(e){
+				var token = e.access_token;
+				Kakao.Auth.setAccessToken(token)
+				Kakao.API.request({
+                        url: '/v2/user/me',
+                        success: function (res) {
+                            // alert(JSON.stringify(res));
+                            const payload = res;
+                            unlinkApp();
+                            // 发送用户信息给UNIAPP
+                            uni.postMessage({
+                                data: {
+                                    payload: {
+                                        id: payload.id,
+                                        email: payload.kakao_account.email,
+                                        name: payload.properties.nickname
+                                    }
+                                }
+                            });
+                        },
+                        fail: function (error) {
+                            // alert(
+                            //     'login success, but failed to request user information: ' +
+                            //     JSON.stringify(error)
+                            // )
+                            console.log(error);
+                        },
+                    })
+			});
+          
+            // 注销登录
+            function unlinkApp() {
+                Kakao.API.request({
+                    url: '/v1/user/unlink',
+                    success: function (res) {
+                        // alert('success: ' + JSON.stringify(res))
+                        console.log('已注销')
+                    },
+                    fail: function (err) {
+                        // alert('fail: ' + JSON.stringify(err))
+                        console.log('注销失败')
+                    },
+                })
+            }
+			
+			/*获取地址栏参数*/
+			function getUrlParam(name) {
+				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+				var r = window.location.search.substr(1).match(reg); //匹配目标参数
+				if (r != null) return unescape(r[2]);
+				return null; //返回参数值
+			}
+        });
+    </script>
+</body>
+
+</html>

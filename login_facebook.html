@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <title>Facebook Login</title>
+    <meta charset="UTF-8">
+    <style type="text/css" media="screen">
+        hr {
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript" src="https://js.cdn.aliyun.dcloud.net.cn/dev/uni-app/uni.webview.1.5.2.js"></script>
+    <script>
+        // 开启监听Uni SDK
+        document.addEventListener('UniAppJSBridgeReady', function () {
+            // This is called with the results from from FB.getLoginStatus().
+            function statusChangeCallback(response) {
+                if (response.status === 'connected') {
+                    testAPI();
+                } else {
+                    login();
+                }
+            }
+
+            // 查询登录状态
+            function checkLoginState() {
+                FB.getLoginStatus(function (response) {
+                    statusChangeCallback(response);
+                });
+            }
+            // 初始化FB
+            window.fbAsyncInit = function () {
+                FB.init({
+                    appId: '3110596649006032',
+                    cookie: true,  // enable cookies to allow the server to access
+                    xfbml: true,  // parse social plugins on this page
+                    version: 'v7.0' // use graph api version 2.8
+                });
+
+                FB.getLoginStatus(function (response) {
+                    statusChangeCallback(response);
+                });
+
+            };
+            // 加载facebook SDK
+            (function (d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = 'https://connect.facebook.net/zh_HK/sdk.js#xfbml=1&version=v3.2&appId=2429587587274822&autoLogAppEvents=1';
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+            // 登录
+            function login() {
+                FB.login(function (response) {
+                    statusChangeCallback(response);
+                });
+            }
+            // 注销
+            function logout() {
+                FB.logout(function (response) {
+                    console.log("Person is now logged out");
+                });
+            }
+            // 获取用户信息
+            function testAPI() {
+                FB.api('/me', 'GET', { fields: 'first_name,last_name,name,id,email' }, function (response) {
+                    // document.getElementById('status').innerHTML = JSON.stringify(response);
+                    // 推送消息
+                    uni.postMessage({
+                        data: {
+                            payload: response
+                        }
+                    });
+                    logout();
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>
