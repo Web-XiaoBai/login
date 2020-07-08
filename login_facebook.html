@@ -9,6 +9,7 @@
             border: none;
         }
     </style>
+	<script src="./jquery-2.1.4.min.js"></script>
 </head>
 
 <body>
@@ -18,31 +19,35 @@
         document.addEventListener('UniAppJSBridgeReady', function () {
             // This is called with the results from from FB.getLoginStatus().
             function statusChangeCallback(response) {
-                if (response.status === 'connected') {
-                    testAPI();
-                } else {
-                    login();
-                }
+				var code = getUrlParam("code");
+				console.log("response1="+JSON.stringify(response));
+				if(code!=''&&code!=null&&code!=undefined){
+					if (response.status === 'connected') {
+						testAPI(response.authResponse.accessToken);
+					} else {
+						$.get("https://graph.facebook.com/v7.0/oauth/access_token?client_id=3110596649006032&client_secret=fa7f7e41afb23ac69f239f888bd472ce&redirect_uri=https://sys.everyportable.co.kr:8086/login/login.html&code="+code,function(e){
+							var token = e.access_token;
+							testAPI(token);
+							console.log("token="+token);
+							//FB.logout(statusChangeCallback);
+						});
+					}
+				}else{
+					window.location.href="https://www.facebook.com/v7.0/dialog/oauth?client_id=3110596649006032&redirect_uri=https://sys.everyportable.co.kr:8086/login/login.html&state=";
+				}
             }
-
-            // 查询登录状态
-            function checkLoginState() {
-                FB.getLoginStatus(function (response) {
-                    statusChangeCallback(response);
-                });
-            }
-            // 初始化FB
+			
+			// 初始化FB
             window.fbAsyncInit = function () {
                 FB.init({
                     appId: '3110596649006032',
-                    cookie: true,  // enable cookies to allow the server to access
+                    cookie: false,  // enable cookies to allow the server to access
                     xfbml: true,  // parse social plugins on this page
                     version: 'v7.0' // use graph api version 2.8
                 });
 
-                FB.getLoginStatus(function (response) {
-                    statusChangeCallback(response);
-                });
+				//查询登录状态
+                FB.getLoginStatus(statusChangeCallback);
 
             };
             // 加载facebook SDK
@@ -50,34 +55,41 @@
                 var js, fjs = d.getElementsByTagName(s)[0];
                 if (d.getElementById(id)) return;
                 js = d.createElement(s); js.id = id;
-                js.src = 'https://connect.facebook.net/zh_HK/sdk.js#xfbml=1&version=v3.2&appId=2429587587274822&autoLogAppEvents=1';
+                js.src = 'https://connect.facebook.net/ko_KR/sdk.js#xfbml=1&version=v7.0&appId=2429587587274822&autoLogAppEvents=1';
                 fjs.parentNode.insertBefore(js, fjs);
             }(document, 'script', 'facebook-jssdk'));
-            // 登录
-            function login() {
-                FB.login(function (response) {
-                    statusChangeCallback(response);
-                });
-            }
             // 注销
-            function logout() {
-                FB.logout(function (response) {
-                    console.log("Person is now logged out");
-                });
+            function logout(token) {
+				//window.location.href="https://www.facebook.com/logout.php?next=https://sys.everyportable.co.kr:8086/login/login.html&access_token="+token;
+				//FB.api('/'+userId+'/permissions','DELETE',{access_token:token},function (response) {
+				FB.logout(function (response) {
+					console.log("logout1="+JSON.stringify(response));
+					//FB.Auth.setAuthResponse(null, 'unknown');
+				});
             }
             // 获取用户信息
-            function testAPI() {
-                FB.api('/me', 'GET', { fields: 'first_name,last_name,name,id,email' }, function (response) {
+            function testAPI(token) {
+                FB.api('/me', 'GET', { access_token:token,fields: 'first_name,last_name,name,id,email'}, function (response) {
                     // document.getElementById('status').innerHTML = JSON.stringify(response);
+					console.log(JSON.stringify(response));
+					var s=response;
+					//FB.logout();
+					logout(token);
                     // 推送消息
                     uni.postMessage({
                         data: {
-                            payload: response
+                            payload: s
                         }
                     });
-                    logout();
                 });
             }
+			/*获取地址栏参数*/
+			function getUrlParam(name) {
+				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+				var r = window.location.search.substr(1).match(reg); //匹配目标参数
+				if (r != null) return unescape(r[2]);
+				return null; //返回参数值
+			}
         });
     </script>
 </body>
